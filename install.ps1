@@ -3,6 +3,11 @@
 
 $ErrorActionPreference = "Stop"
 
+if (-not (Test-Path "skills\yt-search") -or -not (Test-Path "skills\anything-to-notebooklm")) {
+    Write-Host "Error: Must run from project root directory (youtube-to-notebooklm\)" -ForegroundColor Red
+    exit 1
+}
+
 Write-Host "=== YouTube → NotebookLM 研究工作流 ===" -ForegroundColor Cyan
 Write-Host ""
 

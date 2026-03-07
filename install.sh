@@ -4,6 +4,11 @@
 
 set -e
 
+if [ ! -d "skills/yt-search" ] || [ ! -d "skills/anything-to-notebooklm" ]; then
+  echo "Error: Must run from project root directory (youtube-to-notebooklm/)"
+  exit 1
+fi
+
 echo "=== YouTube → NotebookLM 研究工作流 ==="
 echo ""
 

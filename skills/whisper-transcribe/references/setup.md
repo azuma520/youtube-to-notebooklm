@@ -83,8 +83,11 @@ Claude Code 用戶：已有 Gmail MCP，可直接使用 `gmail_create_draft`。
 選項 1 — `rclone`（推薦）：
 
 ```bash
-# 安裝
-curl https://rclone.org/install.sh | bash
+# 安裝（選一）
+brew install rclone          # macOS
+sudo apt install rclone      # Ubuntu/Debian
+winget install Rclone.Rclone  # Windows
+
 # 設定 Google Drive
 rclone config  # 選 Google Drive，按指示授權
 # 上傳

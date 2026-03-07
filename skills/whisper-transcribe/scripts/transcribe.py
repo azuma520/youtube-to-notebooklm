@@ -23,6 +23,11 @@ import sys
 import tempfile
 
 
+def sanitize_filename(name: str) -> str:
+    """Sanitize a string for safe use as a filename."""
+    return re.sub(r'[^a-zA-Z0-9_-]', '_', name)
+
+
 def download_audio(url: str, output_dir: str) -> tuple[str, str]:
     """Download audio from YouTube using yt-dlp. Returns (audio_path, video_id)."""
     # Get video ID first
@@ -31,9 +36,9 @@ def download_audio(url: str, output_dir: str) -> tuple[str, str]:
         capture_output=True, text=True
     )
     if result.returncode != 0:
-        print(f"Error getting video ID: {result.stderr}", file=sys.stderr)
+        print("Error getting video ID (yt-dlp failed)", file=sys.stderr)
         sys.exit(1)
-    video_id = result.stdout.strip()
+    video_id = sanitize_filename(result.stdout.strip())
 
     audio_path = os.path.join(output_dir, f"{video_id}.wav")
     cmd = [
@@ -46,7 +51,7 @@ def download_audio(url: str, output_dir: str) -> tuple[str, str]:
     print(f"Downloading audio: {video_id}")
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"Error downloading audio: {result.stderr}", file=sys.stderr)
+        print("Error downloading audio (yt-dlp failed)", file=sys.stderr)
         sys.exit(1)
 
     return audio_path, video_id
@@ -175,7 +180,7 @@ def main():
             print(f"Error: File not found: {args.input}", file=sys.stderr)
             sys.exit(1)
         audio_path = args.input
-        video_id = os.path.splitext(os.path.basename(audio_path))[0]
+        video_id = sanitize_filename(os.path.splitext(os.path.basename(audio_path))[0])
         if args.backend == "groq":
             segments = transcribe_groq(audio_path, args.language)
         else:

@@ -83,6 +83,9 @@ def translate_openai(texts: list[str], target_lang: str) -> list[str]:
         print("Error: openai package not installed. Run: pip install openai", file=sys.stderr)
         sys.exit(1)
 
+    if not os.environ.get("OPENAI_API_KEY"):
+        print("Error: OPENAI_API_KEY environment variable not set", file=sys.stderr)
+        sys.exit(1)
     client = OpenAI()  # reads OPENAI_API_KEY and OPENAI_BASE_URL from env
 
     lang_names = {
@@ -129,6 +132,11 @@ def main():
     parser.add_argument("--engine", default="deepl", choices=["deepl", "openai"],
                         help="Translation engine (default: deepl)")
     args = parser.parse_args()
+
+    # Validate target language code (alphanumeric + hyphens/underscores only)
+    if not re.match(r'^[a-zA-Z]{2}([_-][a-zA-Z]{2,4})?$', args.target):
+        print(f"Error: Invalid language code: {args.target}", file=sys.stderr)
+        sys.exit(1)
 
     if not os.path.exists(args.input):
         print(f"Error: File not found: {args.input}", file=sys.stderr)
