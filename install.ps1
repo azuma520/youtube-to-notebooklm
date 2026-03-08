@@ -34,14 +34,18 @@ Write-Host "[2/3] 複製 Skills 到 $SkillDir..." -ForegroundColor Yellow
 
 New-Item -ItemType Directory -Force -Path "$SkillDir\yt-search\scripts" | Out-Null
 New-Item -ItemType Directory -Force -Path "$SkillDir\anything-to-notebooklm\references" | Out-Null
+# Clean up old skill.md if upgrading from v1.x
+if (Test-Path "$SkillDir\anything-to-notebooklm\skill.md") { Remove-Item "$SkillDir\anything-to-notebooklm\skill.md" -Force }
 New-Item -ItemType Directory -Force -Path "$SkillDir\whisper-transcribe\scripts" | Out-Null
 New-Item -ItemType Directory -Force -Path "$SkillDir\whisper-transcribe\references" | Out-Null
 
 Copy-Item "skills\yt-search\skill.md" "$SkillDir\yt-search\skill.md" -Force
 Copy-Item "skills\yt-search\scripts\parse_vtt.py" "$SkillDir\yt-search\scripts\parse_vtt.py" -Force
-Copy-Item "skills\anything-to-notebooklm\skill.md" "$SkillDir\anything-to-notebooklm\skill.md" -Force
+Copy-Item "skills\anything-to-notebooklm\SKILL.md" "$SkillDir\anything-to-notebooklm\SKILL.md" -Force
 Copy-Item "skills\anything-to-notebooklm\references\examples.md" "$SkillDir\anything-to-notebooklm\references\examples.md" -Force
+Copy-Item "skills\anything-to-notebooklm\references\generate-options.md" "$SkillDir\anything-to-notebooklm\references\generate-options.md" -Force
 Copy-Item "skills\anything-to-notebooklm\references\troubleshooting.md" "$SkillDir\anything-to-notebooklm\references\troubleshooting.md" -Force
+Copy-Item "skills\anything-to-notebooklm\references\windows-setup.md" "$SkillDir\anything-to-notebooklm\references\windows-setup.md" -Force
 Copy-Item "skills\whisper-transcribe\skill.md" "$SkillDir\whisper-transcribe\skill.md" -Force
 Copy-Item "skills\whisper-transcribe\scripts\transcribe.py" "$SkillDir\whisper-transcribe\scripts\transcribe.py" -Force
 Copy-Item "skills\whisper-transcribe\scripts\translate_srt.py" "$SkillDir\whisper-transcribe\scripts\translate_srt.py" -Force
