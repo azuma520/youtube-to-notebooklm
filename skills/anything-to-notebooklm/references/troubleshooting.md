@@ -1,80 +1,50 @@
 # anything-to-notebooklm 故障排查
 
-## NotebookLM 認證失敗
+## 快速診斷
 
-先用內建診斷確認問題：
-
-```bash
-notebooklm auth check --test    # 完整網路驗證
-```
-
-如果失敗，重新登入：
+遇到問題時，先跑這三個指令確認狀態：
 
 ```bash
-notebooklm login    # 開瀏覽器重新認證
-notebooklm list     # 驗證成功
+notebooklm auth check --test    # 認證狀態
+notebooklm status               # 當前 notebook 上下文
+notebooklm artifact list        # 成品狀態
 ```
 
-## markitdown 轉換失敗
+## 錯誤對照表
 
-```bash
-pip install markitdown    # 確認已安裝
-markitdown --help         # 確認可用
-```
+| 症狀 | 原因 | 修復 |
+|------|------|------|
+| "Not logged in" | session 過期 | `notebooklm login`（需在用戶自己的終端執行） |
+| login 開不了瀏覽器 | 非互動終端（Claude Code 背景 Bash） | 請用戶在自己的終端（PowerShell / Terminal）執行 `notebooklm login` |
+| DPAPI cookie 解密失敗 | Chrome/Edge 加密 cookie 無法存取 | 用 `notebooklm login` 重新認證（不依賴瀏覽器 cookie） |
+| "No notebook context" | 沒有 active notebook | `notebooklm list` → `notebooklm use <id>` |
+| GENERATION_FAILED | 速率限制 / 配額用盡 | 等待 5-10 分鐘，重新生成時加 `--retry 3` |
+| 成品狀態 PENDING 超過 10 分鐘 | 服務端排隊 | `artifact list` 確認狀態；長時間無進展則到 NotebookLM 網頁端操作 |
+| 下載失敗 | artifact 未完成 | `artifact list` 確認狀態為 COMPLETED 後再下載 |
+| 來源內容不對（X.com 等） | 反爬蟲網站 | 先用 crawl4ai 抓取完整內容，再 `source add` 本地檔案 |
+| markitdown 轉換失敗 | 未安裝 / 路徑有空格 | `pip install markitdown`；檔案路徑用雙引號包裹 |
+| UnicodeEncodeError / cp950 | Windows 終端編碼問題 | 見 [windows-setup.md](windows-setup.md) |
 
-常見原因：
-- 檔案路徑有空格 → 用雙引號包
-- PDF 是掃描件 → markitdown 會嘗試 OCR，需要額外依賴
+## 來源上傳後生成失敗
 
-注意：PDF、DOCX、Markdown、CSV、TXT、圖片、音訊可直接用 `notebooklm source add` 上傳，不一定需要 markitdown 轉換。markitdown 主要用於 PPTX、XLSX、EPUB 等 NotebookLM 不直接支援的格式。
+1. 確認來源內容足夠（< 100 字效果差）
+2. 確認來源已處理完成（用 `source wait <id>` 等待，不要跳過）
+3. 內容過長（> 50 萬字）可能超時
+4. 嘗試 `--retry 3` 重新生成
 
-## Source 上傳後生成失敗
+## markitdown 使用時機
 
-- 內容太短（< 100 字）→ 生成效果差
-- 內容太長（> 50 萬字）→ 可能超時
-- 忘記 `--wait` → source 還沒處理完就開始生成
+| 格式 | 需要 markitdown？ |
+|------|-------------------|
+| PDF / DOCX / MD / CSV / TXT | 不需要 — 直接 `source add` |
+| 圖片 / 音訊 | 不需要 — 直接 `source add`（自動 OCR / 轉錄） |
+| PPTX / XLSX / EPUB | **需要** — 先 `markitdown` 轉 Markdown 再上傳 |
 
-**關鍵**：`source add` 一定要加 `--wait`。
+## 速率限制
 
-## 生成任務卡住
-
-```bash
-notebooklm artifact list    # 查看所有成品狀態
-notebooklm artifact poll <task_id>    # 查看特定任務
-```
-
-如果 pending 超過 10 分鐘，到 NotebookLM 網頁端手動操作。
-
-遇到速率限制時，用 `--retry 3` 自動重試（指數退避）。
-
-## 生成失敗
-
-成品狀態為 FAILED 時：
-1. 確認來源內容足夠（> 100 字）
-2. 確認來源已處理完成（不在 PREPARING 狀態）
-3. 嘗試 `--retry 3` 重新生成
-4. 檢查是否達到每日生成上限
-
-## 跨平台暫存目錄
-
-Skill 中的 `$TEMP` 在不同平台對應：
-
-| 平台 | 變數 | 典型路徑 |
-|------|------|---------|
-| Windows (PowerShell) | `$env:TEMP` | `C:\Users\<user>\AppData\Local\Temp` |
-| Windows (Git Bash) | `$TEMP` | `/tmp` 或 Windows temp |
-| macOS / Linux | `$TMPDIR` 或 `/tmp` | `/tmp` |
-
-Agent 會自動處理，但如果手動執行指令，用對應平台的變數。
-
-## Windows 中文編碼
-
-中文檔名或中文輸出亂碼時，在指令前加 `PYTHONUTF8=1`：
-
-```bash
-PYTHONUTF8=1 notebooklm create "筆記本名稱"
-PYTHONUTF8=1 markitdown "中文檔名.pdf" -o "$TEMP/converted.md"
-```
+- 每次請求間隔 > 2 秒
+- 同時進行的生成任務最多 3 個
+- 遇到限流時，用 `--retry 3` 自動指數退避重試
 
 ## 除錯模式
 
@@ -83,3 +53,13 @@ PYTHONUTF8=1 markitdown "中文檔名.pdf" -o "$TEMP/converted.md"
 ```bash
 NOTEBOOKLM_LOG_LEVEL=DEBUG notebooklm <command>
 ```
+
+## 跨平台暫存目錄
+
+| 平台 | 變數 | 典型路徑 |
+|------|------|---------|
+| Windows (PowerShell) | `$env:TEMP` | `C:\Users\<user>\AppData\Local\Temp` |
+| Windows (Git Bash) | `$TEMP` | `/tmp` 或 Windows temp |
+| macOS / Linux | `$TMPDIR` 或 `/tmp` | `/tmp` |
+
+Agent 會自動處理，但手動執行指令時用對應平台的變數。
